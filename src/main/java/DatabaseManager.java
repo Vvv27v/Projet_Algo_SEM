@@ -12,6 +12,10 @@ public class DatabaseManager {
     public void initializeDatabase() {
         try (Connection conn = DriverManager.getConnection(DATABASE_URL)) {
             if (conn != null) {
+                // AJOUT CRUCIAL : Force SQLite à activer et respecter les liaisons d'ID entre les tables
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("PRAGMA foreign_keys = ON;");
+                }
                 createTables(conn);
             }
         } catch (SQLException e) {
@@ -57,16 +61,17 @@ public class DatabaseManager {
     }
 
     public void saveConsommation(Consommation_Energie consommation) {
-        String sql = "INSERT OR REPLACE INTO consommations (id, batiment_id, type, quantite, unit) VALUES(?,?,?,?,?)";
+        // On retire l'id des colonnes pour laisser SQLite l'auto-incrémenter
+        String sql = "INSERT INTO consommations (batiment_id, type, quantite, unit) VALUES(?,?,?,?)";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, consommation.getId());
-            pstmt.setInt(2, consommation.getBatimentId());
-            pstmt.setString(3, consommation.getType().name());
-            pstmt.setInt(4, consommation.getQuantité());
-            pstmt.setString(5, consommation.getUnit().name());
+            pstmt.setInt(1, consommation.getBatimentId());
+            pstmt.setString(2, consommation.getType().name());
+            pstmt.setInt(3, consommation.getQuantité());
+            pstmt.setString(4, consommation.getUnit().name());
             pstmt.executeUpdate();
         } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de la sauvegarde de la consommation : " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -80,11 +85,18 @@ public class DatabaseManager {
             pstmt.setInt(1, batimentId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    EnergyUnit unit = EnergyUnit.valueOf(rs.getString("unit"));
+                    // Sécurité : Récupération propre des Enums sans planter au valueOf
+                    TypeConsommation type = TypeConsommation.ELECTRICITE;
+                    try {
+                        type = TypeConsommation.valueOf(rs.getString("type").toUpperCase());
+                    } catch (Exception e) { /* Valeur par défaut */ }
+
+                    EnergyUnit unit = EnergyUnit.getUnitForType(type);
+
                     Consommation_Energie c = new Consommation_Energie(
                             rs.getInt("id"),
                             rs.getInt("batiment_id"),
-                            TypeConsommation.valueOf(rs.getString("type")),
+                            type,
                             rs.getInt("quantite"),
                             unit
                     );
@@ -92,6 +104,7 @@ public class DatabaseManager {
                 }
             }
         } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des consommations : " + e.getMessage());
             e.printStackTrace();
         }
         return consommations;

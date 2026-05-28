@@ -336,6 +336,10 @@ public class InterfaceGraphique extends JFrame {
                 Consommation_Energie c = new Consommation_Energie(batimentId, type, quantite);
                 c.setUnit(unit);
                 dbManager.saveConsommation(c);
+
+                // === MODIFICATION ICI : On force l'interface à savoir quel bâtiment charger ===
+                this.selectedBatimentId = batimentId;
+
                 refreshConsommationTable();
                 dialog.dispose();
                 JOptionPane.showMessageDialog(InterfaceGraphique.this, "✅ Consommation ajoutée!", "Succès", JOptionPane.INFORMATION_MESSAGE);
@@ -477,25 +481,35 @@ public class InterfaceGraphique extends JFrame {
         modelBatiments.setRowCount(0);
         modelConsommation.setRowCount(0);
 
-        batiments.add(new Maison("Villa Moderna", 2, 4));
-        batiments.add(new Appartement("Immeuble Centre", 8, 3));
-        batiments.add(new Bureau("Tech Building", 5, 30));
-        batiments.add(new Local_commercial("Mega Store", 3, 1500));
-        batiments.add(new Batiment_Universitaire("Université Tech", 6, 120));
-        batiments.add(new Autre_Structure("Station Solaire", 1, "Énergie Renouvelable"));
+        // 1. On crée les objets localement (les IDs vont de 1 à 6 via nextId)
+        Batiment b1 = new Maison("Villa Moderna", 2, 4);
+        Batiment b2 = new Appartement("Immeuble Centre", 8, 3);
+        Batiment b3 = new Bureau("Tech Building", 5, 30);
+        Batiment b4 = new Local_commercial("Mega Store", 3, 1500);
+        Batiment b5 = new Batiment_Universitaire("Université Tech", 6, 120);
+        Batiment b6 = new Autre_Structure("Station Solaire", 1, "Énergie Renouvelable");
 
+        batiments.add(b1);
+        batiments.add(b2);
+        batiments.add(b3);
+        batiments.add(b4);
+        batiments.add(b5);
+        batiments.add(b6);
+
+        // 2. On sauvegarde en base de données avec leurs IDs exacts
         for (Batiment b : batiments) {
             dbManager.saveBatiment(b, obtenirDetailsBatiment(b));
         }
 
+        // 3. On crée les consommations en liant DIRECTEMENT l'ID exact des objets ci-dessus
         Consommation_Energie[] consumptions = {
-            new Consommation_Energie(batiments.get(0).getId(), TypeConsommation.ELECTRICITE, 1200),
-            new Consommation_Energie(batiments.get(0).getId(), TypeConsommation.CHAUFFAGE_GAZ, 80),
-            new Consommation_Energie(batiments.get(0).getId(), TypeConsommation.EAU, 150),
-            new Consommation_Energie(batiments.get(1).getId(), TypeConsommation.ELECTRICITE, 3500),
-            new Consommation_Energie(batiments.get(1).getId(), TypeConsommation.EAU, 250),
-            new Consommation_Energie(batiments.get(2).getId(), TypeConsommation.CLIMATISATION, 4000),
-            new Consommation_Energie(batiments.get(3).getId(), TypeConsommation.ELECTRICITE, 8000),
+                new Consommation_Energie(b1.getId(), TypeConsommation.ELECTRICITE, 1200),
+                new Consommation_Energie(b1.getId(), TypeConsommation.CHAUFFAGE_GAZ, 80),
+                new Consommation_Energie(b1.getId(), TypeConsommation.EAU, 150),
+                new Consommation_Energie(b2.getId(), TypeConsommation.ELECTRICITE, 3500),
+                new Consommation_Energie(b2.getId(), TypeConsommation.EAU, 250),
+                new Consommation_Energie(b3.getId(), TypeConsommation.CLIMATISATION, 4000),
+                new Consommation_Energie(b4.getId(), TypeConsommation.ELECTRICITE, 8000),
         };
 
         for (Consommation_Energie c : consumptions) {
@@ -504,7 +518,7 @@ public class InterfaceGraphique extends JFrame {
         }
 
         refreshBatimentsTable();
-        JOptionPane.showMessageDialog(this, "✅ Données de test chargées avec succès!", "Succès", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, "✅ Données de test chargées avec succès !", "Succès", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void clearDatabase() {
@@ -565,11 +579,11 @@ public class InterfaceGraphique extends JFrame {
         if (selectedBatimentId >= 0) {
             List<Consommation_Energie> consommations = dbManager.getConsommationsByBatiment(selectedBatimentId);
             for (Consommation_Energie c : consommations) {
+                // CORRECTION : On envoie exactement 3 objets pour les 3 colonnes du tableau (Type, Quantité, Unité)
                 modelConsommation.addRow(new Object[]{
-                    c.getId(),
-                    c.getType().getLabel(),
-                    c.getQuantité(),
-                    c.getUnit().getLabel()
+                        c.getType().getLabel(), // Correspond à la colonne "Type"
+                        c.getQuantité(),        // Correspond à la colonne "Quantité"
+                        c.getUnit().getLabel()  // Correspond à la colonne "Unité"
                 });
             }
         }
