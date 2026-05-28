@@ -6,6 +6,11 @@ public class Maison extends Batiment {
         this.nombreChambres = nombreChambres;
     }
 
+    public Maison(int id, String nom, int nombreEtages, int nombreChambres) {
+        super(id, nom, "Maison", nombreEtages);
+        this.nombreChambres = nombreChambres;
+    }
+
     public int getNombreChambres() {
         return nombreChambres;
     }

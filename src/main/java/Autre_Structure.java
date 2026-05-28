@@ -6,6 +6,11 @@ public class Autre_Structure extends Batiment {
         this.description = description;
     }
 
+    public Autre_Structure(int id, String nom, int nombreEtages, String description) {
+        super(id, nom, "Autre_Structure", nombreEtages);
+        this.description = description;
+    }
+
     public String getDescription() {
         return description;
     }

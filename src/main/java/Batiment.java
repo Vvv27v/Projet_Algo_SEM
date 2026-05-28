@@ -1,12 +1,29 @@
 public abstract class Batiment {
+    private int id;
     private String nom;
     private String type;
     private int nombreEtages;
+    private static int nextId = 1;
 
     public Batiment(String nom, String type, int nombreEtages) {
+        this.id = nextId++;
         this.nom = nom;
         this.type = type;
         this.nombreEtages = nombreEtages;
+    }
+
+    public Batiment(int id, String nom, String type, int nombreEtages) {
+        this.id = id;
+        this.nom = nom;
+        this.type = type;
+        this.nombreEtages = nombreEtages;
+        if (id >= nextId) {
+            nextId = id + 1;
+        }
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getNom() {
@@ -36,7 +53,8 @@ public abstract class Batiment {
     @Override
     public String toString() {
         return "Batiment{" +
-                "nom='" + nom + '\'' +
+                "id=" + id +
+                ", nom='" + nom + '\'' +
                 ", type='" + type + '\'' +
                 ", nombreEtages=" + nombreEtages +
                 '}';

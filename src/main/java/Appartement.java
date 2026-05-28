@@ -6,6 +6,11 @@ public class Appartement extends Batiment {
         this.nombreChambres = nombreChambres;
     }
 
+    public Appartement(int id, String nom, int nombreEtages, int nombreChambres) {
+        super(id, nom, "Appartement", nombreEtages);
+        this.nombreChambres = nombreChambres;
+    }
+
     public int getNombreChambres() {
         return nombreChambres;
     }

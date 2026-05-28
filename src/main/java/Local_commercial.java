@@ -6,6 +6,11 @@ public class Local_commercial extends Batiment {
         this.surface = surface;
     }
 
+    public Local_commercial(int id, String nom, int nombreEtages, double surface) {
+        super(id, nom, "Local_commercial", nombreEtages);
+        this.surface = surface;
+    }
+
     public double getSurface() {
         return surface;
     }

@@ -1,18 +1,45 @@
 public class Consommation_Energie {
-    private String nom;
+    private int id;
+    private int batimentId;
+    private TypeConsommation type;
     private int quantité;
+    private static int nextId = 1;
 
-    public Consommation_Energie(String nom, int quantité) {
-        this.nom = nom;
+    public Consommation_Energie(int batimentId, TypeConsommation type, int quantité) {
+        this.id = nextId++;
+        this.batimentId = batimentId;
+        this.type = type;
         this.quantité = quantité;
     }
 
-    public String getNom() {
-        return nom;
+    public Consommation_Energie(int id, int batimentId, TypeConsommation type, int quantité) {
+        this.id = id;
+        this.batimentId = batimentId;
+        this.type = type;
+        this.quantité = quantité;
+        if (id >= nextId) {
+            nextId = id + 1;
+        }
     }
 
-    public void setNom(String nom) {
-        this.nom = nom;
+    public int getId() {
+        return id;
+    }
+
+    public int getBatimentId() {
+        return batimentId;
+    }
+
+    public void setBatimentId(int batimentId) {
+        this.batimentId = batimentId;
+    }
+
+    public TypeConsommation getType() {
+        return type;
+    }
+
+    public void setType(TypeConsommation type) {
+        this.type = type;
     }
 
     public int getQuantité() {
@@ -23,10 +50,16 @@ public class Consommation_Energie {
         this.quantité = quantité;
     }
 
+    public String getNom() {
+        return type.getLabel();
+    }
+
     @Override
     public String toString() {
         return "Consommation_Energie{" +
-                "nom='" + nom + '\'' +
+                "id=" + id +
+                ", batimentId=" + batimentId +
+                ", type=" + type +
                 ", quantité=" + quantité +
                 '}';
     }

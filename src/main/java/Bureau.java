@@ -6,6 +6,11 @@ public class Bureau extends Batiment {
         this.nombreBureau = nombreBureau;
     }
 
+    public Bureau(int id, String nom, int nombreEtages, int nombreBureau) {
+        super(id, nom, "Bureau", nombreEtages);
+        this.nombreBureau = nombreBureau;
+    }
+
     public int getNombreBureau() {
         return nombreBureau;
     }
