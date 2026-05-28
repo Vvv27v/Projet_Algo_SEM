@@ -3,3 +3,23 @@
 *.class
 *.log
 *.tmp
+
+# Maven
+target/
+*.jar
+*.war
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Database
+*.db
+projet_batiments.db
+
+# OS
+.DS_Store
+Thumbs.db

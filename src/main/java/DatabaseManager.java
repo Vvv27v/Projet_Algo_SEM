@@ -124,4 +124,57 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
+
+    public List<Batiment> getAllBatiments() {
+        List<Batiment> batiments = new ArrayList<>();
+        String sql = "SELECT * FROM batiments";
+
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String nom = rs.getString("nom");
+                String type = rs.getString("type");
+                int etages = rs.getInt("nombre_etages");
+                String details = rs.getString("details");
+
+                Batiment b = createBatimentFromDatabase(id, nom, type, etages, details);
+                if (b != null) {
+                    batiments.add(b);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return batiments;
+    }
+
+    private Batiment createBatimentFromDatabase(int id, String nom, String type, int etages, String details) {
+        return switch (type) {
+            case "Maison" -> {
+                int detail = details != null ? Integer.parseInt(details) : 0;
+                yield new Maison(id, nom, etages, detail);
+            }
+            case "Appartement" -> {
+                int detail = details != null ? Integer.parseInt(details) : 0;
+                yield new Appartement(id, nom, etages, detail);
+            }
+            case "Bureau" -> {
+                int detail = details != null ? Integer.parseInt(details) : 0;
+                yield new Bureau(id, nom, etages, detail);
+            }
+            case "Local_commercial" -> {
+                double detail = details != null ? Double.parseDouble(details) : 0;
+                yield new Local_commercial(id, nom, etages, detail);
+            }
+            case "Batiment_Universitaire" -> {
+                int detail = details != null ? Integer.parseInt(details) : 0;
+                yield new Batiment_Universitaire(id, nom, etages, detail);
+            }
+            case "Autre_Structure" -> new Autre_Structure(id, nom, etages, details);
+            default -> null;
+        };
+    }
 }
