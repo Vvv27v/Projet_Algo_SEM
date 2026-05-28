@@ -111,7 +111,7 @@ public class InterfaceGraphique extends JFrame {
         panel.setBorder(createStyledBorder("⚡ Consommations Énergétiques"));
 
         modelConsommation = new DefaultTableModel(
-            new String[]{"Type", "Quantité", "Unité"}, 0
+            new String[]{"ID", "Type", "Quantité", "Unité"}, 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {

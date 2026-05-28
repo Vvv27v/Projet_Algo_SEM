@@ -20,12 +20,23 @@ public class DatabaseManager {
     }
 
     private void createTables(Connection conn) throws SQLException {
+        String sqlUsers = "CREATE TABLE IF NOT EXISTS users (" +
+                "id INTEGER PRIMARY KEY," +
+                "email TEXT NOT NULL UNIQUE," +
+                "nom TEXT NOT NULL," +
+                "prenom TEXT NOT NULL," +
+                "telephone TEXT NOT NULL," +
+                "password TEXT NOT NULL," +
+                "verified INTEGER DEFAULT 0)";
+
         String sqlBatiments = "CREATE TABLE IF NOT EXISTS batiments (" +
                 "id INTEGER PRIMARY KEY," +
+                "user_id INTEGER NOT NULL," +
                 "nom TEXT NOT NULL," +
                 "type TEXT NOT NULL," +
                 "nombre_etages INTEGER NOT NULL," +
-                "details TEXT)";
+                "details TEXT," +
+                "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)";
 
         String sqlConsommation = "CREATE TABLE IF NOT EXISTS consommations (" +
                 "id INTEGER PRIMARY KEY," +
@@ -33,9 +44,11 @@ public class DatabaseManager {
                 "type TEXT NOT NULL," +
                 "quantite INTEGER NOT NULL," +
                 "unit TEXT DEFAULT 'kWh'," +
+                "date_heure TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY(batiment_id) REFERENCES batiments(id) ON DELETE CASCADE)";
 
         try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sqlUsers);
             stmt.execute(sqlBatiments);
             stmt.execute(sqlConsommation);
         }
@@ -153,6 +166,69 @@ public class DatabaseManager {
             e.printStackTrace();
         }
         return batiments;
+    }
+
+    public boolean registerUser(String email, String nom, String prenom, String telephone, String password) {
+        String sql = "INSERT INTO users (email, nom, prenom, telephone, password, verified) VALUES(?,?,?,?,?,0)";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.setString(2, nom);
+            pstmt.setString(3, prenom);
+            pstmt.setString(4, telephone);
+            pstmt.setString(5, password);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int loginUser(String email, String password) {
+        String sql = "SELECT id, verified FROM users WHERE email = ? AND password = ?";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.setString(2, password);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    if (rs.getInt("verified") == 1) {
+                        return rs.getInt("id");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public boolean verifyUser(String email) {
+        String sql = "UPDATE users SET verified = 1 WHERE email = ?";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean emailExists(String email) {
+        String sql = "SELECT id FROM users WHERE email = ?";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private Batiment createBatimentFromDatabase(int id, String nom, String type, int etages, String details) {
