@@ -32,6 +32,7 @@ public class DatabaseManager {
                 "batiment_id INTEGER NOT NULL," +
                 "type TEXT NOT NULL," +
                 "quantite INTEGER NOT NULL," +
+                "unit TEXT DEFAULT 'kWh'," +
                 "FOREIGN KEY(batiment_id) REFERENCES batiments(id) ON DELETE CASCADE)";
 
         try (Statement stmt = conn.createStatement()) {
@@ -56,13 +57,14 @@ public class DatabaseManager {
     }
 
     public void saveConsommation(Consommation_Energie consommation) {
-        String sql = "INSERT OR REPLACE INTO consommations (id, batiment_id, type, quantite) VALUES(?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO consommations (id, batiment_id, type, quantite, unit) VALUES(?,?,?,?,?)";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, consommation.getId());
             pstmt.setInt(2, consommation.getBatimentId());
             pstmt.setString(3, consommation.getType().name());
             pstmt.setInt(4, consommation.getQuantité());
+            pstmt.setString(5, consommation.getUnit().name());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -71,18 +73,20 @@ public class DatabaseManager {
 
     public List<Consommation_Energie> getConsommationsByBatiment(int batimentId) {
         List<Consommation_Energie> consommations = new ArrayList<>();
-        String sql = "SELECT id, batiment_id, type, quantite FROM consommations WHERE batiment_id = ?";
+        String sql = "SELECT id, batiment_id, type, quantite, unit FROM consommations WHERE batiment_id = ?";
 
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, batimentId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
+                    EnergyUnit unit = EnergyUnit.valueOf(rs.getString("unit"));
                     Consommation_Energie c = new Consommation_Energie(
                             rs.getInt("id"),
                             rs.getInt("batiment_id"),
                             TypeConsommation.valueOf(rs.getString("type")),
-                            rs.getInt("quantite")
+                            rs.getInt("quantite"),
+                            unit
                     );
                     consommations.add(c);
                 }

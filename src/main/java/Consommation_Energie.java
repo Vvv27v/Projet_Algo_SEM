@@ -3,6 +3,7 @@ public class Consommation_Energie {
     private int batimentId;
     private TypeConsommation type;
     private int quantité;
+    private EnergyUnit unit;
     private static int nextId = 1;
 
     public Consommation_Energie(int batimentId, TypeConsommation type, int quantité) {
@@ -10,13 +11,15 @@ public class Consommation_Energie {
         this.batimentId = batimentId;
         this.type = type;
         this.quantité = quantité;
+        this.unit = EnergyUnit.getUnitForType(type);
     }
 
-    public Consommation_Energie(int id, int batimentId, TypeConsommation type, int quantité) {
+    public Consommation_Energie(int id, int batimentId, TypeConsommation type, int quantité, EnergyUnit unit) {
         this.id = id;
         this.batimentId = batimentId;
         this.type = type;
         this.quantité = quantité;
+        this.unit = unit;
         if (id >= nextId) {
             nextId = id + 1;
         }
@@ -52,6 +55,14 @@ public class Consommation_Energie {
 
     public String getNom() {
         return type.getLabel();
+    }
+
+    public EnergyUnit getUnit() {
+        return unit;
+    }
+
+    public void setUnit(EnergyUnit unit) {
+        this.unit = unit;
     }
 
     @Override
