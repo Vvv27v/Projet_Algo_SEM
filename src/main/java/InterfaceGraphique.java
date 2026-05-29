@@ -24,10 +24,10 @@ public class InterfaceGraphique extends JFrame {
         this.userId = userId;
         dbManager = new DatabaseManager();
         batiments = dbManager.getBatimentsByUser(userId);
+        setupFrame();
         if (batiments.isEmpty()) {
             loadTestData();
         }
-        setupFrame();
         setVisible(true);
     }
 
@@ -554,6 +554,7 @@ public class InterfaceGraphique extends JFrame {
     }
 
     private void refreshBatimentsTable() {
+        int currentRow = tableauBatiments != null ? tableauBatiments.getSelectedRow() : -1;
         modelBatiments.setRowCount(0);
         for (Batiment b : batiments) {
             modelBatiments.addRow(new Object[]{
@@ -563,6 +564,10 @@ public class InterfaceGraphique extends JFrame {
                 b.getNombreEtages(),
                 obtenirDetailsBatiment(b)
             });
+        }
+        if (modelBatiments.getRowCount() > 0) {
+            int selectRow = (currentRow >= 0 && currentRow < modelBatiments.getRowCount()) ? currentRow : 0;
+            tableauBatiments.setRowSelectionInterval(selectRow, selectRow);
         }
     }
 
