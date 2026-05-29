@@ -427,16 +427,25 @@ public class InterfaceGraphique extends JFrame {
         return p;
     }
 
+    private void afficherConsommations(int batId) {
+        if (modelConso == null) return;
+        modelConso.setRowCount(0);
+        for (Consommation_Energie c : db.getConsommationsByBatiment(batId)) {
+            modelConso.addRow(new Object[]{
+                c.getId(), c.getType().getLabel(),
+                c.getQuantité(), c.getUnit().getLabel(),
+                String.format("%.2f", c.getCout()), c.getDateHeure()
+            });
+        }
+    }
+
     private void refreshConsoTable() {
         if (modelConso == null || comboBatConso == null) return;
-        modelConso.setRowCount(0);
         int idx = comboBatConso.getSelectedIndex();
         if (idx >= 0 && idx < batiments.size()) {
-            for (Consommation_Energie c : db.getConsommationsByBatiment(batiments.get(idx).getId())) {
-                modelConso.addRow(new Object[]{c.getId(), c.getType().getLabel(),
-                    c.getQuantité(), c.getUnit().getLabel(),
-                    String.format("%.2f", c.getCout()), c.getDateHeure()});
-            }
+            afficherConsommations(batiments.get(idx).getId());
+        } else {
+            modelConso.setRowCount(0);
         }
     }
 
@@ -488,11 +497,17 @@ public class InterfaceGraphique extends JFrame {
                 if (batIdx < 0) { err(d, "Selectionnez un batiment."); return; }
                 int batId = batiments.get(batIdx).getId();
                 Consommation_Energie c = new Consommation_Energie(batId, t, q, date.getText().trim());
-                int newId = db.saveConsommation(c);
-                c.setId(newId);
-                if (comboBatConso != null) comboBatConso.setSelectedIndex(batIdx);
+                db.saveConsommation(c);
                 d.dispose();
-                refreshConsoTable();
+                // Sync combo silently (sans déclencher le listener)
+                if (comboBatConso != null) {
+                    ActionListener[] als = comboBatConso.getActionListeners();
+                    for (ActionListener al : als) comboBatConso.removeActionListener(al);
+                    comboBatConso.setSelectedIndex(batIdx);
+                    for (ActionListener al : als) comboBatConso.addActionListener(al);
+                }
+                // Refresh direct depuis la BD avec le bon batId
+                afficherConsommations(batId);
                 refreshDashboard();
             } catch (NumberFormatException ex) {
                 err(d, "Quantite invalide (nombre entier requis).");
@@ -773,8 +788,11 @@ public class InterfaceGraphique extends JFrame {
             Consommation_Energie c = new Consommation_Energie(batiments.get((int)r[0]).getId(),(TypeConsommation)r[1],(int)r[2],now);
             c.setId(db.saveConsommation(c));
         }
-        refreshAll();
-        JOptionPane.showMessageDialog(this, "✔  Données de test chargées !", "Succès", JOptionPane.INFORMATION_MESSAGE);
+        refreshBatTable();
+        refreshCombos();
+        if (!batiments.isEmpty()) afficherConsommations(batiments.get(0).getId());
+        refreshDashboard();
+        JOptionPane.showMessageDialog(this, "Donnees de test chargees !", "Succes", JOptionPane.INFORMATION_MESSAGE);
     }
 
     // ── Refresh global ────────────────────────────────────────────────────────
