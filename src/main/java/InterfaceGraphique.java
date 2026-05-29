@@ -27,6 +27,8 @@ public class InterfaceGraphique extends JFrame {
         setupFrame();
         if (batiments.isEmpty()) {
             loadTestData();
+        } else if (tableauBatiments.getRowCount() > 0) {
+            tableauBatiments.setRowSelectionInterval(0, 0);
         }
         setVisible(true);
     }
@@ -510,6 +512,9 @@ public class InterfaceGraphique extends JFrame {
         }
 
         refreshBatimentsTable();
+        if (tableauBatiments.getRowCount() > 0) {
+            tableauBatiments.setRowSelectionInterval(0, 0);
+        }
         JOptionPane.showMessageDialog(this, "✅ Données de test chargées avec succès!", "Succès", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -554,7 +559,6 @@ public class InterfaceGraphique extends JFrame {
     }
 
     private void refreshBatimentsTable() {
-        int currentRow = tableauBatiments != null ? tableauBatiments.getSelectedRow() : -1;
         modelBatiments.setRowCount(0);
         for (Batiment b : batiments) {
             modelBatiments.addRow(new Object[]{
@@ -565,13 +569,10 @@ public class InterfaceGraphique extends JFrame {
                 obtenirDetailsBatiment(b)
             });
         }
-        if (modelBatiments.getRowCount() > 0) {
-            int selectRow = (currentRow >= 0 && currentRow < modelBatiments.getRowCount()) ? currentRow : 0;
-            tableauBatiments.setRowSelectionInterval(selectRow, selectRow);
-        }
     }
 
     private void refreshConsommationTable() {
+        if (modelConsommation == null) return;
         modelConsommation.setRowCount(0);
         if (selectedBatimentId >= 0) {
             List<Consommation_Energie> consommations = dbManager.getConsommationsByBatiment(selectedBatimentId);
