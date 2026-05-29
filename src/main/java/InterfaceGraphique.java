@@ -24,6 +24,9 @@ public class InterfaceGraphique extends JFrame {
         this.userId = userId;
         dbManager = new DatabaseManager();
         batiments = dbManager.getBatimentsByUser(userId);
+        if (batiments.isEmpty()) {
+            loadTestData();
+        }
         setupFrame();
         setVisible(true);
     }
