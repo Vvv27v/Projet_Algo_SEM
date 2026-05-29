@@ -320,12 +320,46 @@ public class InterfaceGraphique extends JFrame {
     }
 
     private void addBatimentDialog() {
-        JDialog d = dialog("Ajouter un Bâtiment", 420, 280);
-        JPanel f = form(4);
-        JTextField nom = new JTextField(); JComboBox<String> type = new JComboBox<>(
+        JDialog d = dialog("Ajouter un Bâtiment", 460, 420);
+
+        // Section bâtiment
+        JPanel fBat = new JPanel(new GridLayout(4, 2, 10, 10));
+        fBat.setBackground(Color.WHITE);
+        fBat.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder("Bâtiment"),
+            BorderFactory.createEmptyBorder(6,8,6,8)));
+        JTextField nom = new JTextField();
+        JComboBox<String> type = new JComboBox<>(
             new String[]{"Maison","Appartement","Bureau","Local_commercial","Batiment_Universitaire","Autre_Structure"});
-        JTextField etages = new JTextField("1"); JTextField detail = new JTextField("0");
-        row(f,"Nom :", nom); row(f,"Type :", type); row(f,"Étages :", etages); row(f,"Détail :", detail);
+        JTextField etages = new JTextField("1");
+        JTextField detail = new JTextField("0");
+        row(fBat,"Nom :", nom); row(fBat,"Type :", type);
+        row(fBat,"Étages :", etages); row(fBat,"Détail :", detail);
+
+        // Section consommation
+        JPanel fConso = new JPanel(new GridLayout(3, 2, 10, 10));
+        fConso.setBackground(Color.WHITE);
+        fConso.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder("Consommation initiale (optionnel)"),
+            BorderFactory.createEmptyBorder(6,8,6,8)));
+        JComboBox<TypeConsommation> typeConso = new JComboBox<>(TypeConsommation.values());
+        JTextField unitField = new JTextField(EnergyUnit.getUnitForType(TypeConsommation.values()[0]).getLabel());
+        unitField.setEditable(false); unitField.setBackground(new Color(240,235,255)); unitField.setForeground(PRIMARY);
+        typeConso.addActionListener(e -> {
+            TypeConsommation t = (TypeConsommation) typeConso.getSelectedItem();
+            if (t != null) unitField.setText(EnergyUnit.getUnitForType(t).getLabel());
+        });
+        JTextField qty = new JTextField();
+        row(fConso,"Type énergie :", typeConso);
+        row(fConso,"Unité :", unitField);
+        row(fConso,"Quantité :", qty);
+
+        JPanel all = new JPanel(new BorderLayout(0, 10));
+        all.setBackground(Color.WHITE);
+        all.setBorder(BorderFactory.createEmptyBorder(10,10,0,10));
+        all.add(fBat, BorderLayout.NORTH);
+        all.add(fConso, BorderLayout.CENTER);
+
         JButton ok = actionBtn("Ajouter", SUCCESS);
         ok.addActionListener(e -> {
             try {
@@ -334,15 +368,37 @@ public class InterfaceGraphique extends JFrame {
                 int et = Integer.parseInt(etages.getText().trim());
                 String det = detail.getText().trim();
                 Batiment b = "Local_commercial".equals(t)
-                    ? new Local_commercial(nom.getText().trim(), et, Double.parseDouble(det))
+                    ? new Local_commercial(nom.getText().trim(), et, Double.parseDouble(det.isEmpty()?"0":det))
                     : "Autre_Structure".equals(t)
                     ? new Autre_Structure(nom.getText().trim(), et, det)
-                    : makeBat(nom.getText().trim(), t, et, Integer.parseInt(det));
-                if (b != null) { batiments.add(b); db.saveBatiment(b, det, userId); refreshAll(); d.dispose(); }
+                    : makeBat(nom.getText().trim(), t, et, Integer.parseInt(det.isEmpty()?"0":det));
+                if (b == null) return;
+                batiments.add(b);
+                db.saveBatiment(b, det, userId);
+                // Ajout consommation si quantité renseignée
+                String qStr = qty.getText().trim();
+                if (!qStr.isEmpty()) {
+                    try {
+                        int q = Integer.parseInt(qStr);
+                        if (q > 0) {
+                            TypeConsommation tc = (TypeConsommation) typeConso.getSelectedItem();
+                            String now = java.time.LocalDateTime.now()
+                                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                            Consommation_Energie c = new Consommation_Energie(b.getId(), tc, q, now);
+                            db.saveConsommation(c);
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
+                refreshAll();
+                d.dispose();
             } catch (Exception ex) { err(d, "Valeur invalide."); }
         });
         JButton cancel = actionBtn("Annuler", MUTED); cancel.addActionListener(e -> d.dispose());
-        finishDialog(d, f, ok, cancel);
+
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        btns.setBackground(Color.WHITE); btns.add(cancel); btns.add(ok);
+        d.add(all, BorderLayout.CENTER); d.add(btns, BorderLayout.SOUTH);
+        d.setVisible(true);
     }
 
     private void editBatimentDialog() {
