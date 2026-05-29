@@ -338,6 +338,7 @@ public class InterfaceGraphique extends JFrame {
                 Consommation_Energie c = new Consommation_Energie(batimentId, type, quantite);
                 c.setUnit(unit);
                 dbManager.saveConsommation(c);
+                selectedBatimentId = batimentId;
                 refreshConsommationTable();
                 dialog.dispose();
                 JOptionPane.showMessageDialog(InterfaceGraphique.this, "✅ Consommation ajoutée!", "Succès", JOptionPane.INFORMATION_MESSAGE);
