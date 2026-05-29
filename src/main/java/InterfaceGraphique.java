@@ -161,8 +161,8 @@ public class InterfaceGraphique extends JFrame {
             cardLayout.show(contentPanel, key);
             switch (key) {
                 case "consommations" -> { refreshCombos(); refreshConsoTable(); }
-                case "graphiques"    -> { refreshCombos(); }
-                case "statistiques"  -> { refreshCombos(); }
+                case "graphiques"    -> { refreshCombos(); drawChart(); }
+                case "statistiques"  -> { refreshCombos(); statsAll(); }
                 case "dashboard"     -> refreshDashboard();
             }
         });
@@ -550,6 +550,10 @@ public class InterfaceGraphique extends JFrame {
     private void drawChart() {
         if (chartHolder == null) return;
         chartHolder.removeAll();
+        // Par défaut : comparaison entre bâtiments si rien n'est explicitement choisi
+        if (comboChartType.getSelectedIndex() == 0 && !batiments.isEmpty()) {
+            comboChartType.setSelectedItem("Comparaison bâtiments");
+        }
         String ct = (String) comboChartType.getSelectedItem();
         int idx = comboBatChart.getSelectedIndex();
         JPanel chart;
