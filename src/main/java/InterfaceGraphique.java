@@ -764,9 +764,12 @@ public class InterfaceGraphique extends JFrame {
             modelBat.addRow(new Object[]{b.getId(), b.getNom(), b.getType(), b.getNombreEtages(), detailStr(b)});
     }
 
+    @SuppressWarnings("unchecked")
     private void refreshCombos() {
-        for (JComboBox<String> cb : new JComboBox[]{comboBatConso, comboBatChart, comboBatStats}) {
-            if (cb == null) continue;
+        JComboBox<?>[] combos = {comboBatConso, comboBatChart, comboBatStats};
+        for (JComboBox<?> raw : combos) {
+            if (raw == null) continue;
+            JComboBox<String> cb = (JComboBox<String>) raw;
             cb.removeAllItems();
             for (Batiment b : batiments) cb.addItem(b.getNom() + " (" + b.getType() + ")");
         }

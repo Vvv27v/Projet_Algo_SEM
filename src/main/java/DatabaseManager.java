@@ -227,6 +227,19 @@ public class DatabaseManager {
         return -1;
     }
 
+    public boolean verifyUser(String email) {
+        String sql = "UPDATE users SET verified = 1 WHERE email = ?";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean emailExists(String email) {
         String sql = "SELECT id FROM users WHERE email = ?";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
