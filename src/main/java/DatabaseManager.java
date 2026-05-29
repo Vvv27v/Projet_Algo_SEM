@@ -197,7 +197,7 @@ public class DatabaseManager {
     }
 
     public boolean registerUser(String email, String nom, String prenom, String telephone, String password) {
-        String sql = "INSERT INTO users (email, nom, prenom, telephone, password, verified) VALUES(?,?,?,?,?,0)";
+        String sql = "INSERT INTO users (email, nom, prenom, telephone, password, verified) VALUES(?,?,?,?,?,1)";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);

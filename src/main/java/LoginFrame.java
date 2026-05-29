@@ -165,8 +165,9 @@ public class LoginFrame extends JFrame {
             }
 
             if (dbManager.registerUser(email, nom, prenom, tel, pwd)) {
-                JOptionPane.showMessageDialog(this, "Inscription réussie! Un code de vérification a été envoyé par email.", "Succès", JOptionPane.INFORMATION_MESSAGE);
-                showVerificationPanel(email);
+                JOptionPane.showMessageDialog(this, "✅ Inscription réussie! Vous pouvez maintenant vous connecter.", "Succès", JOptionPane.INFORMATION_MESSAGE);
+                CardLayout cl = (CardLayout) getContentPane().getLayout();
+                cl.show(getContentPane(), "LOGIN");
             } else {
                 JOptionPane.showMessageDialog(this, "Erreur lors de l'inscription!", "Erreur", JOptionPane.ERROR_MESSAGE);
             }
