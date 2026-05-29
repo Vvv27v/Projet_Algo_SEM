@@ -65,6 +65,10 @@ public class Consommation_Energie {
         this.unit = unit;
     }
 
+    public static void initNextId(int id) {
+        if (id > nextId) nextId = id;
+    }
+
     @Override
     public String toString() {
         return "Consommation_Energie{" +

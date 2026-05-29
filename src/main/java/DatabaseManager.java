@@ -13,9 +13,19 @@ public class DatabaseManager {
         try (Connection conn = DriverManager.getConnection(DATABASE_URL)) {
             if (conn != null) {
                 createTables(conn);
+                syncConsommationNextId(conn);
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void syncConsommationNextId(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM consommations")) {
+            if (rs.next() && rs.getObject(1) != null) {
+                Consommation_Energie.initNextId(rs.getInt(1) + 1);
+            }
         }
     }
 
