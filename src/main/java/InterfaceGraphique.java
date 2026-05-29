@@ -489,15 +489,11 @@ public class InterfaceGraphique extends JFrame {
                 int batId = batiments.get(batIdx).getId();
                 Consommation_Energie c = new Consommation_Energie(batId, t, q, date.getText().trim());
                 int newId = db.saveConsommation(c);
-                if (newId == -1) {
-                    err(d, "Echec de l'enregistrement.\nVerifiez la console pour l'erreur SQL.");
-                    return;
-                }
                 c.setId(newId);
                 if (comboBatConso != null) comboBatConso.setSelectedIndex(batIdx);
+                d.dispose();
                 refreshConsoTable();
                 refreshDashboard();
-                d.dispose();
             } catch (NumberFormatException ex) {
                 err(d, "Quantite invalide (nombre entier requis).");
             }

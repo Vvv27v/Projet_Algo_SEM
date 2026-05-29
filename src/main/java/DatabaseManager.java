@@ -87,17 +87,20 @@ public class DatabaseManager {
     // Returns the auto-generated ID
     public int saveConsommation(Consommation_Energie c) {
         String sql = "INSERT INTO consommations (batiment_id, type, quantite, unit, cout, date_heure) VALUES(?,?,?,?,?,?)";
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setInt(1, c.getBatimentId());
-            pstmt.setString(2, c.getType().name());
-            pstmt.setInt(3, c.getQuantité());
-            pstmt.setString(4, c.getUnit().name());
-            pstmt.setDouble(5, c.getCout());
-            pstmt.setString(6, c.getDateHeure());
-            pstmt.executeUpdate();
-            try (ResultSet keys = pstmt.getGeneratedKeys()) {
-                if (keys.next()) return keys.getInt(1);
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL)) {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, c.getBatimentId());
+                pstmt.setString(2, c.getType().name());
+                pstmt.setInt(3, c.getQuantité());
+                pstmt.setString(4, c.getUnit().name());
+                pstmt.setDouble(5, c.getCout());
+                pstmt.setString(6, c.getDateHeure());
+                pstmt.executeUpdate();
+            }
+            // last_insert_rowid() est fiable avec SQLite
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT last_insert_rowid()")) {
+                if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
             System.err.println("saveConsommation error: " + e.getMessage());
