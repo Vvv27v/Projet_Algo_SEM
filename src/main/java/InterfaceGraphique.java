@@ -18,24 +18,19 @@ public class InterfaceGraphique extends JFrame {
     public InterfaceGraphique() {
         batiments = new ArrayList<>();
         dbManager = new DatabaseManager();
-        
-        // Configuration de la fenêtre
+
         setTitle("Gestion des Bâtiments et Consommation Énergétique");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 750);
         setLocationRelativeTo(null);
         setResizable(true);
 
-        // Créer les panneaux
         JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
         panelPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Panel Bâtiments avec consommation intégrée
-        JPanel panelBatiments = creerPanelBatimentsAvecConsommation();
+        JPanel panelMain = creerPanelBatimentsAvecConsommation();
+        panelPrincipal.add(panelMain, BorderLayout.CENTER);
 
-        panelPrincipal.add(panelBatiments, BorderLayout.CENTER);
-
-        // Panel boutons globaux
         JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton btnCharger = new JButton("Charger Données");
         JButton btnSauvegarder = new JButton("Sauvegarder");
@@ -52,15 +47,21 @@ public class InterfaceGraphique extends JFrame {
         panelBoutons.add(btnClear);
         panelBoutons.add(btnQuitter);
 
-        panelPrincipal.add(panelBoutonAvecConsommation() {
+        panelPrincipal.add(panelBoutons, BorderLayout.SOUTH);
+
+        add(panelPrincipal);
+        setVisible(true);
+
+        chargerDonnees();
+    }
+
+    private JPanel creerPanelBatimentsAvecConsommation() {
         JPanel panelMain = new JPanel(new BorderLayout(10, 10));
         panelMain.setBorder(BorderFactory.createTitledBorder("Gestion Bâtiments et Consommation Énergétique"));
 
-        // Diviser en deux parties: bâtiments et consommations
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setDividerLocation(350);
 
-        // Panel Bâtiments (haut)
         JPanel panelBatiments = new JPanel(new BorderLayout(10, 10));
         panelBatiments.setBorder(BorderFactory.createTitledBorder("Bâtiments"));
 
@@ -83,7 +84,6 @@ public class InterfaceGraphique extends JFrame {
         JScrollPane scrollBatiments = new JScrollPane(tableauBatiments);
         panelBatiments.add(scrollBatiments, BorderLayout.CENTER);
 
-        // Panel boutons bâtiments
         JPanel panelBoutonsBatiments = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton btnAjouter = new JButton("Ajouter Bâtiment");
         JButton btnSupprimer = new JButton("Supprimer Bâtiment");
@@ -99,7 +99,6 @@ public class InterfaceGraphique extends JFrame {
 
         panelBatiments.add(panelBoutonsBatiments, BorderLayout.SOUTH);
 
-        // Panel Consommation (bas)
         JPanel panelConsommation = new JPanel(new BorderLayout(10, 10));
         panelConsommation.setBorder(BorderFactory.createTitledBorder("Consommation Énergétique (du bâtiment sélectionné)"));
 
@@ -113,7 +112,6 @@ public class InterfaceGraphique extends JFrame {
         JScrollPane scrollConsommation = new JScrollPane(tableauConsommation);
         panelConsommation.add(scrollConsommation, BorderLayout.CENTER);
 
-        // Panel boutons consommation
         JPanel panelBoutonsConsommation = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton btnAjouterConsommation = new JButton("Ajouter Consommation");
         JButton btnSupprimerConsommation = new JButton("Supprimer Consommation");
@@ -134,11 +132,13 @@ public class InterfaceGraphique extends JFrame {
 
         panelMain.add(splitPane, BorderLayout.CENTER);
 
-        return panelMain.add(btnModifier);
+        return panelMain;
+    }
+
+    private void chargerDonnees() {
         dbManager.clearDatabase();
         batiments.clear();
-        
-        // Créer et charger les bâtiments
+
         batiments.add(new Maison("Villa Moderne", 2, 4));
         batiments.add(new Appartement("Immeuble Centre-Ville", 8, 3));
         batiments.add(new Bureau("Bureau Tech", 5, 30));
@@ -146,13 +146,11 @@ public class InterfaceGraphique extends JFrame {
         batiments.add(new Batiment_Universitaire("Université A", 6, 100));
         batiments.add(new Autre_Structure("Parking Souterrain", 3, "Parking"));
 
-        // Sauvegarder les bâtiments
         for (Batiment b : batiments) {
             String details = obtenirDetailsBatiment(b);
             dbManager.saveBatiment(b, details);
         }
 
-        // Ajouter des consommations pour les bâtiments
         Consommation_Energie cons1 = new Consommation_Energie(batiments.get(0).getId(), TypeConsommation.ELECTRICITE, 1000);
         Consommation_Energie cons2 = new Consommation_Energie(batiments.get(0).getId(), TypeConsommation.CHAUFFAGE_GAZ, 800);
         Consommation_Energie cons3 = new Consommation_Energie(batiments.get(1).getId(), TypeConsommation.ELECTRICITE, 3000);
@@ -166,8 +164,19 @@ public class InterfaceGraphique extends JFrame {
         dbManager.saveConsommation(cons5);
 
         actualiserTableauBatiments();
+        JOptionPane.showMessageDialog(this, "Données chargées avec succès!");
+    }
 
-        JOptionPane.sId(),
+    private void sauvegarderDonnees() {
+        JOptionPane.showMessageDialog(this, "Données sauvegardées!");
+    }
+
+    private void actualiserTableauBatiments() {
+        modelBatiments.setRowCount(0);
+        for (Batiment b : batiments) {
+            String details = obtenirDetailsBatiment(b);
+            modelBatiments.addRow(new Object[]{
+                b.getId(),
                 b.getNom(),
                 b.getType(),
                 b.getNombreEtages(),
@@ -186,43 +195,7 @@ public class InterfaceGraphique extends JFrame {
                     c.getType().getLabel(),
                     c.getQuantité()
                 });
-            }anager.clearDatabase();
-            batiments.clear();
-            modelBatiments.setRowCount(0);
-            modelConsommation.setRowCount(0);
-            JOptionPane.showMessageDialog(this, "Base de données effacée!");
-        }
-        consommations.add(new Consommation_Energie("Chauffage Gaz", 3000));
-        consommations.add(new Consommation_Energie("Eau", 1200));
-        consommations.add(new Consommation_Energie("Électricité Éclairage", 800));
-
-        // Actualiser les tableaux
-        actualiserTableauBatiments();
-        actualiserTableauConsommation();
-
-        JOptionPane.showMessageDialog(this, "Données chargées avec succès!");
-    }
-
-    private void actualiserTableauBatiments() {
-        modelBatiments.setRowCount(0);
-        for (Batiment b : batiments) {
-            String details = obtenirDetailsBatiment(b);
-            modelBatiments.addRow(new Object[]{
-                b.getNom(),
-                b.getType(),
-                b.getNombreEtages(),
-                details
-            });
-        }
-    }
-
-    private void actualiserTableauConsommation() {
-        modelConsommation.setRowCount(0);
-        for (Consommation_Energie c : consommations) {
-            modelConsommation.addRow(new Object[]{
-                c.getNom(),
-                c.getQuantité()
-            });
+            }
         }
     }
 
@@ -271,10 +244,9 @@ public class InterfaceGraphique extends JFrame {
         panel.add(lblDetail);
         panel.add(txtDetail);
 
-        JPanel paneldbManager.saveBatiment(b, obtenirDetailsBatiment(b));
-                    actualiserTableauBatiments();
-                    dialog.dispose();
-                    JOptionPane.showMessageDialog(InterfaceGraphique.);
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton btnAjouter = new JButton("Ajouter");
+        JButton btnAnnuler = new JButton("Annuler");
 
         btnAjouter.addActionListener(e -> {
             try {
@@ -291,6 +263,43 @@ public class InterfaceGraphique extends JFrame {
                     case "Appartement":
                         b = new Appartement(nom, etages, detail);
                         break;
+                    case "Bureau":
+                        b = new Bureau(nom, etages, detail);
+                        break;
+                    case "Local_commercial":
+                        b = new Local_commercial(nom, etages, detail);
+                        break;
+                    case "Batiment_Universitaire":
+                        b = new Batiment_Universitaire(nom, etages, detail);
+                        break;
+                    case "Autre_Structure":
+                        b = new Autre_Structure(nom, etages, "Structure");
+                        break;
+                }
+
+                if (b != null) {
+                    batiments.add(b);
+                    dbManager.saveBatiment(b, obtenirDetailsBatiment(b));
+                    actualiserTableauBatiments();
+                    dialog.dispose();
+                    JOptionPane.showMessageDialog(InterfaceGraphique.this, "Bâtiment ajouté!");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Erreur: Veuillez entrer des nombres valides!");
+            }
+        });
+
+        btnAnnuler.addActionListener(e -> dialog.dispose());
+
+        panelBoutons.add(btnAjouter);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    private void afficherDialogAjoutConsommation() {
         if (selectedBatimentId < 0) {
             JOptionPane.showMessageDialog(this, "Veuillez sélectionner un bâtiment!");
             return;
@@ -321,45 +330,12 @@ public class InterfaceGraphique extends JFrame {
             try {
                 TypeConsommation type = (TypeConsommation) cmbType.getSelectedItem();
                 int quantite = Integer.parseInt(txtQuantite.getText());
-                
+
                 Consommation_Energie c = new Consommation_Energie(selectedBatimentId, type, quantite);
                 dbManager.saveConsommation(c);
                 actualiserTableauConsommation();
                 dialog.dispose();
-                JOptionPane.showMessageDialog(InterfaceGraphique.
-
-    private void afficherDialogAjoutConsommation() {
-        JDialog dialog = new JDialog(this, "Ajouter une Consommation", true);
-        dialog.setSize(350, 150);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JLabel lblNom = new JLabel("Type d'Énergie:");
-        JTextField txtNom = new JTextField();
-        JLabel lblQuantite = new JLabel("Quantité (kWh):");
-        JTextField txtQuantite = new JTextField();
-
-        panel.add(lblNom);
-        panel.add(txtNom);
-        panel.add(lblQuantite);
-        panel.add(txtQuantite);
-
-        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton btnAjouter = new JButton("Ajouter");
-        JButton btnAnnuler = new JButton("Annuler");
-
-        btnAjouter.addActionListener(e -> {
-            try {
-                String nom = txtNom.getText();
-                int quantite = Integer.parseInt(txtQuantite.getText());
-                
-                Consommation_Energie c = new Consommation_Energie(nom, quantite);
-                consommations.add(c);
-                actualiserTableauConsommation();
-                dialog.dispose();
-                JOptionPane.showMessageDialog(this, "Consommation ajoutée avec succès!");
+                JOptionPane.showMessageDialog(InterfaceGraphique.this, "Consommation ajoutée!");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(dialog, "Erreur: Veuillez entrer une quantité valide!");
             }
@@ -367,7 +343,18 @@ public class InterfaceGraphique extends JFrame {
 
         btnAnnuler.addActionListener(e -> dialog.dispose());
 
-        paneint batimentId = (int) modelBatiments.getValueAt(selectedRow, 0);
+        panelBoutons.add(btnAjouter);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    private void supprimerBatimentSelectionne() {
+        int selectedRow = tableauBatiments.getSelectedRow();
+        if (selectedRow >= 0) {
+            int batimentId = (int) modelBatiments.getValueAt(selectedRow, 0);
             batiments.removeIf(b -> b.getId() == batimentId);
             dbManager.deleteBatiment(batimentId);
             actualiserTableauBatiments();
@@ -384,18 +371,7 @@ public class InterfaceGraphique extends JFrame {
             int consomationId = (int) modelConsommation.getValueAt(selectedRow, 0);
             dbManager.deleteConsommation(consomationId);
             actualiserTableauConsommation();
-            JOptionPane.showMessageDialog(this, "Consommation supprimée!
-        if (selectedRow >= 0) {
-            JOptionPane.showMessageDialog(this, "Modification non implémentée");
-        } else {
-            JOptionPane.showMessageDialog(this, "Veuillez sélectionner un bâtiment!");
-        }
-    }
-
-    private void modifierConsommationSelectionnee() {
-        int selectedRow = tableauConsommation.getSelectedRow();
-        if (selectedRow >= 0) {
-            JOptionPane.showMessageDialog(this, "Modification non implémentée");
+            JOptionPane.showMessageDialog(this, "Consommation supprimée!");
         } else {
             JOptionPane.showMessageDialog(this, "Veuillez sélectionner une consommation!");
         }
@@ -406,10 +382,7 @@ public class InterfaceGraphique extends JFrame {
         if (selectedRow >= 0) {
             Batiment b = batiments.get(selectedRow);
             StringBuilder details = new StringBuilder();
-            details.append("Nom: ").append(b.getNom()).append("\n");
-            details.append("Type: ").append(b.getType()).append("\n");
-            details.append("Nombre d'étages: ").append(b.getNombreEtages()).append("\n");
-ID: ").append(b.getId()).append("\n");
+            details.append("ID: ").append(b.getId()).append("\n");
             details.append("Nom: ").append(b.getNom()).append("\n");
             details.append("Type: ").append(b.getType()).append("\n");
             details.append("Nombre d'étages: ").append(b.getNombreEtages()).append("\n\n");
@@ -441,7 +414,7 @@ ID: ").append(b.getId()).append("\n");
         }
 
         List<Consommation_Energie> consommations = dbManager.getConsommationsByBatiment(selectedBatimentId);
-        
+
         if (consommations.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Aucune consommation enregistrée pour ce bâtiment!");
             return;
@@ -462,7 +435,10 @@ ID: ").append(b.getId()).append("\n");
             }
             if (quantite < minConsommation) {
                 minConsommation = quantite;
-                typeMin = c.getType().getLabel
+                typeMin = c.getType().getLabel();
+            }
+        }
+
         double moyenne = (double) totalConsommation / consommations.size();
 
         StringBuilder stats = new StringBuilder();
@@ -473,6 +449,14 @@ ID: ").append(b.getId()).append("\n");
         stats.append("Minimum: ").append(typeMin).append(" (").append(minConsommation).append(" kWh)");
 
         JOptionPane.showMessageDialog(this, stats.toString(), "Statistiques", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void effacerBase() {
+        dbManager.clearDatabase();
+        batiments.clear();
+        modelBatiments.setRowCount(0);
+        modelConsommation.setRowCount(0);
+        JOptionPane.showMessageDialog(this, "Base de données effacée!");
     }
 
     public static void main(String[] args) {

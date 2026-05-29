@@ -1,4 +1,4 @@
-public class Appartement extends Batiment {
+clpublic class Appartement extends Batiment {
     private int nombreChambres;
 
     public Appartement(String nom, int nombreEtages, int nombreChambres) {
