@@ -54,15 +54,16 @@ public class DatabaseManager {
         }
     }
 
-    public void saveBatiment(Batiment batiment, String details) {
-        String sql = "INSERT OR REPLACE INTO batiments (id, nom, type, nombre_etages, details) VALUES(?,?,?,?,?)";
+    public void saveBatiment(Batiment batiment, String details, int userId) {
+        String sql = "INSERT OR REPLACE INTO batiments (id, user_id, nom, type, nombre_etages, details) VALUES(?,?,?,?,?,?)";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, batiment.getId());
-            pstmt.setString(2, batiment.getNom());
-            pstmt.setString(3, batiment.getType());
-            pstmt.setInt(4, batiment.getNombreEtages());
-            pstmt.setString(5, details);
+            pstmt.setInt(2, userId);
+            pstmt.setString(3, batiment.getNom());
+            pstmt.setString(4, batiment.getType());
+            pstmt.setInt(5, batiment.getNombreEtages());
+            pstmt.setString(6, details);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -160,6 +161,33 @@ public class DatabaseManager {
                 Batiment b = createBatimentFromDatabase(id, nom, type, etages, details);
                 if (b != null) {
                     batiments.add(b);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return batiments;
+    }
+
+    public List<Batiment> getBatimentsByUser(int userId) {
+        List<Batiment> batiments = new ArrayList<>();
+        String sql = "SELECT * FROM batiments WHERE user_id = ?";
+
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String nom = rs.getString("nom");
+                    String type = rs.getString("type");
+                    int etages = rs.getInt("nombre_etages");
+                    String details = rs.getString("details");
+
+                    Batiment b = createBatimentFromDatabase(id, nom, type, etages, details);
+                    if (b != null) {
+                        batiments.add(b);
+                    }
                 }
             }
         } catch (SQLException e) {

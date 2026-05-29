@@ -11,6 +11,7 @@ public class InterfaceGraphique extends JFrame {
     private DefaultTableModel modelBatiments;
     private DefaultTableModel modelConsommation;
     private int selectedBatimentId = -1;
+    private int userId;
 
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private static final Color SECONDARY_COLOR = new Color(22, 160, 133);
@@ -19,9 +20,10 @@ public class InterfaceGraphique extends JFrame {
     private static final Color TEXT_COLOR = new Color(44, 62, 80);
     private static final Color BORDER_COLOR = new Color(189, 195, 199);
 
-    public InterfaceGraphique() {
+    public InterfaceGraphique(int userId) {
+        this.userId = userId;
         dbManager = new DatabaseManager();
-        batiments = dbManager.getAllBatiments();
+        batiments = dbManager.getBatimentsByUser(userId);
         setupFrame();
         setVisible(true);
     }
@@ -262,7 +264,7 @@ public class InterfaceGraphique extends JFrame {
 
                 if (b != null) {
                     batiments.add(b);
-                    dbManager.saveBatiment(b, detailStr);
+                    dbManager.saveBatiment(b, detailStr, userId);
                     refreshBatimentsTable();
                     dialog.dispose();
                     JOptionPane.showMessageDialog(InterfaceGraphique.this, "✅ Bâtiment ajouté avec succès!", "Succès", JOptionPane.INFORMATION_MESSAGE);
@@ -485,7 +487,7 @@ public class InterfaceGraphique extends JFrame {
         batiments.add(new Autre_Structure("Station Solaire", 1, "Énergie Renouvelable"));
 
         for (Batiment b : batiments) {
-            dbManager.saveBatiment(b, obtenirDetailsBatiment(b));
+            dbManager.saveBatiment(b, obtenirDetailsBatiment(b), userId);
         }
 
         Consommation_Energie[] consumptions = {
@@ -636,9 +638,5 @@ public class InterfaceGraphique extends JFrame {
         }
         panel.add(lbl);
         panel.add(field);
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new InterfaceGraphique());
     }
 }
