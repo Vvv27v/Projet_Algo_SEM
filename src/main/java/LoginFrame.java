@@ -169,7 +169,7 @@ public class LoginFrame extends JFrame {
                 CardLayout cl = (CardLayout) getContentPane().getLayout();
                 cl.show(getContentPane(), "LOGIN");
             } else {
-                JOptionPane.showMessageDialog(this, "Erreur lors de l'inscription!", "Erreur", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "❌ Erreur: Cet email existe déjà ou données invalides!", "Erreur", JOptionPane.ERROR_MESSAGE);
             }
         });
         panel.add(registerBtn, gbc);
