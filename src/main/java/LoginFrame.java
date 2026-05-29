@@ -19,7 +19,7 @@ public class LoginFrame extends JFrame {
     private void setupFrame() {
         setTitle("Smart Energy Manager - Authentification");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 600);
+        setSize(700, 800);
         setLocationRelativeTo(null);
         setResizable(false);
         setBackground(BACKGROUND_COLOR);
@@ -239,13 +239,16 @@ public class LoginFrame extends JFrame {
 
     private JTextField addField(JPanel panel, String label, GridBagConstraints gbc, int row) {
         gbc.gridy = row;
+        gbc.gridwidth = 1;
         JLabel lbl = new JLabel(label);
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lbl.setForeground(TEXT_COLOR);
         panel.add(lbl, gbc);
 
         gbc.gridy = row + 1;
-        JTextField field = new JTextField();
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JTextField field = new JTextField(25);
         field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         field.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR));
         panel.add(field, gbc);
@@ -255,13 +258,16 @@ public class LoginFrame extends JFrame {
 
     private JPasswordField addPasswordField(JPanel panel, String label, GridBagConstraints gbc, int row) {
         gbc.gridy = row;
+        gbc.gridwidth = 1;
         JLabel lbl = new JLabel(label);
         lbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lbl.setForeground(TEXT_COLOR);
         panel.add(lbl, gbc);
 
         gbc.gridy = row + 1;
-        JPasswordField field = new JPasswordField();
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JPasswordField field = new JPasswordField(25);
         field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         field.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR));
         panel.add(field, gbc);
