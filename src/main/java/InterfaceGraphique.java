@@ -11,15 +11,15 @@ import java.util.stream.*;
 public class InterfaceGraphique extends JFrame {
 
     // ── Couleurs ──────────────────────────────────────────────────────────────
-    private static final Color SIDEBAR  = new Color(30, 42, 58);
-    private static final Color ACTIVE   = new Color(52, 152, 219);
-    private static final Color PRIMARY  = new Color(52, 152, 219);
-    private static final Color SUCCESS  = new Color(46, 204, 113);
-    private static final Color WARNING  = new Color(243, 156, 18);
-    private static final Color DANGER   = new Color(231, 76, 60);
-    private static final Color BG       = new Color(245, 246, 250);
-    private static final Color TEXT     = new Color(44, 62, 80);
-    private static final Color MUTED    = new Color(127, 140, 141);
+    private static final Color SIDEBAR  = new Color(30, 18, 48);
+    private static final Color ACTIVE   = new Color(126, 87, 194);
+    private static final Color PRIMARY  = new Color(126, 87, 194);
+    private static final Color SUCCESS  = new Color(0, 184, 148);
+    private static final Color WARNING  = new Color(253, 121, 168);
+    private static final Color DANGER   = new Color(225, 57, 119);
+    private static final Color BG       = new Color(245, 243, 255);
+    private static final Color TEXT     = new Color(35, 25, 60);
+    private static final Color MUTED    = new Color(130, 110, 160);
 
     // ── État ──────────────────────────────────────────────────────────────────
     private final int userId;
@@ -99,7 +99,7 @@ public class InterfaceGraphique extends JFrame {
 
         // Logo
         JPanel logo = new JPanel(new BorderLayout());
-        logo.setBackground(new Color(20, 30, 44));
+        logo.setBackground(new Color(20, 10, 35));
         logo.setMaximumSize(new Dimension(210, 65));
         logo.setBorder(BorderFactory.createEmptyBorder(15, 18, 15, 18));
         JLabel logoLbl = new JLabel("⚡ Smart Energy");
@@ -110,14 +110,14 @@ public class InterfaceGraphique extends JFrame {
         sb.add(Box.createVerticalStrut(12));
 
         String[][] items = {
-            {"dashboard",     "🏠", "Tableau de bord"},
-            {"batiments",     "🏢", "Bâtiments"},
-            {"consommations", "⚡", "Consommations"},
-            {"graphiques",    "📊", "Graphiques"},
-            {"statistiques",  "📈", "Statistiques"},
+            {"dashboard",     "Tableau de bord"},
+            {"batiments",     "Batiments"},
+            {"consommations", "Consommations"},
+            {"graphiques",    "Graphiques"},
+            {"statistiques",  "Statistiques"},
         };
         for (String[] item : items) {
-            JButton btn = navBtn(item[1] + "  " + item[2], item[0]);
+            JButton btn = navBtn(item[1], item[0]);
             navBtns.put(item[0], btn);
             sb.add(btn);
             sb.add(Box.createVerticalStrut(3));
@@ -125,14 +125,14 @@ public class InterfaceGraphique extends JFrame {
 
         sb.add(Box.createVerticalGlue());
 
-        JButton btnTest = actionBtn("📥 Données test", WARNING);
+        JButton btnTest = actionBtn("Donnees test", WARNING);
         btnTest.setMaximumSize(new Dimension(188, 34));
         btnTest.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnTest.addActionListener(e -> loadTestData());
         sb.add(btnTest);
         sb.add(Box.createVerticalStrut(8));
 
-        JButton btnQuit = actionBtn("❌ Quitter", DANGER);
+        JButton btnQuit = actionBtn("Quitter", DANGER);
         btnQuit.setMaximumSize(new Dimension(188, 34));
         btnQuit.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnQuit.addActionListener(e -> System.exit(0));
@@ -153,7 +153,7 @@ public class InterfaceGraphique extends JFrame {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setMaximumSize(new Dimension(210, 42));
         btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { if (!key.equals(activeNav)) btn.setBackground(new Color(44,62,80)); }
+            public void mouseEntered(MouseEvent e) { if (!key.equals(activeNav)) btn.setBackground(new Color(60,35,90)); }
             public void mouseExited(MouseEvent e)  { if (!key.equals(activeNav)) btn.setBackground(SIDEBAR); }
         });
         btn.addActionListener(e -> {
@@ -191,10 +191,10 @@ public class InterfaceGraphique extends JFrame {
         lblConsoTotal = new JLabel("0"); lblConsoTotal.setFont(new Font("Segoe UI", Font.BOLD, 28));
         lblCoutTotal  = new JLabel("0.00 €"); lblCoutTotal.setFont(new Font("Segoe UI", Font.BOLD, 28));
         lblTopBat     = new JLabel("-"); lblTopBat.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        cards.add(summaryCard("🏢 Bâtiments",    lblBatiments,  PRIMARY, "gérés"));
-        cards.add(summaryCard("⚡ Consommation",  lblConsoTotal, SUCCESS, "relevés total"));
-        cards.add(summaryCard("💶 Coût estimé",   lblCoutTotal,  WARNING, "euros"));
-        cards.add(summaryCard("🔥 Plus actif",    lblTopBat,     DANGER,  "bâtiment"));
+        cards.add(summaryCard("Batiments",    lblBatiments,  PRIMARY, "geres"));
+        cards.add(summaryCard("Consommation", lblConsoTotal, SUCCESS, "releves total"));
+        cards.add(summaryCard("Cout estime",  lblCoutTotal,  WARNING, "euros"));
+        cards.add(summaryCard("Plus actif",   lblTopBat,     DANGER,  "batiment"));
 
         JPanel body = new JPanel(new BorderLayout(0, 14));
         body.setBackground(BG);
@@ -465,10 +465,12 @@ public class InterfaceGraphique extends JFrame {
                 TypeConsommation t = (TypeConsommation) type.getSelectedItem();
                 int batId = batiments.get(bat.getSelectedIndex()).getId();
                 Consommation_Energie c = new Consommation_Energie(batId, t, q, date.getText().trim());
-                int newId = db.saveConsommation(c); c.setId(newId);
+                int newId = db.saveConsommation(c);
+                if (newId == -1) { err(d, "Erreur lors de l'enregistrement en base de donnees."); return; }
+                c.setId(newId);
                 if (comboBatConso != null) comboBatConso.setSelectedIndex(bat.getSelectedIndex());
                 refreshConsoTable(); refreshDashboard(); d.dispose();
-                JOptionPane.showMessageDialog(this, "✔  Consommation ajoutée !", "Succès", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Consommation ajoutee !", "Succes", JOptionPane.INFORMATION_MESSAGE);
             } catch (NumberFormatException ex) { err(d,"Quantité invalide."); }
         });
         JButton cancel = actionBtn("Annuler", MUTED); cancel.addActionListener(e -> d.dispose());
@@ -833,7 +835,7 @@ public class InterfaceGraphique extends JFrame {
         t.setFont(new Font("Segoe UI",Font.PLAIN,12)); t.setRowHeight(30);
         t.setSelectionBackground(new Color(52,152,219,50)); t.setSelectionForeground(TEXT);
         t.setGridColor(new Color(242,242,242)); t.setShowVerticalLines(false);
-        t.getTableHeader().setBackground(new Color(52,73,94)); t.getTableHeader().setForeground(Color.WHITE);
+        t.getTableHeader().setBackground(new Color(80,50,120)); t.getTableHeader().setForeground(Color.WHITE);
         t.getTableHeader().setFont(new Font("Segoe UI",Font.BOLD,12));
         t.getTableHeader().setPreferredSize(new Dimension(0,34));
         t.setIntercellSpacing(new Dimension(10,0));

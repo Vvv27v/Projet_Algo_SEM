@@ -13,10 +13,30 @@ public class DatabaseManager {
         try (Connection conn = DriverManager.getConnection(DATABASE_URL)) {
             if (conn != null) {
                 createTables(conn);
-                migrateConsommations(conn);
+                ensureConsommationSchema(conn);
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void ensureConsommationSchema(Connection conn) throws SQLException {
+        boolean hasCout = false;
+        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "consommations", "cout")) {
+            hasCout = rs.next();
+        }
+        if (!hasCout) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("DROP TABLE IF EXISTS consommations");
+                stmt.execute("CREATE TABLE consommations (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "batiment_id INTEGER NOT NULL," +
+                    "type TEXT NOT NULL," +
+                    "quantite INTEGER NOT NULL," +
+                    "unit TEXT DEFAULT 'KILOWATT_HEURE'," +
+                    "cout REAL DEFAULT 0," +
+                    "date_heure TEXT DEFAULT CURRENT_TIMESTAMP)");
+            }
         }
     }
 
@@ -56,15 +76,6 @@ public class DatabaseManager {
         }
     }
 
-    // Add missing columns to existing database
-    private void migrateConsommations(Connection conn) {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE consommations ADD COLUMN cout REAL DEFAULT 0");
-        } catch (SQLException ignored) {}
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE consommations ADD COLUMN date_heure TEXT DEFAULT CURRENT_TIMESTAMP");
-        } catch (SQLException ignored) {}
-    }
 
     // Returns the auto-generated ID
     public int saveConsommation(Consommation_Energie c) {
