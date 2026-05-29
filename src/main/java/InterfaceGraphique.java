@@ -441,39 +441,69 @@ public class InterfaceGraphique extends JFrame {
     }
 
     private void addConsoDialog() {
-        if (batiments.isEmpty()) { info("Ajoutez d'abord un bâtiment."); return; }
-        JDialog d = dialog("Ajouter une Consommation", 430, 310);
-        JPanel f = form(5);
+        if (batiments.isEmpty()) { info("Ajoutez d'abord un batiment."); return; }
+        JDialog d = dialog("Ajouter une Consommation", 460, 340);
+
+        JPanel f = new JPanel(new GridLayout(5, 2, 10, 14));
+        f.setBorder(BorderFactory.createEmptyBorder(18, 20, 8, 20));
+        f.setBackground(Color.WHITE);
+
         String[] names = batiments.stream().map(b -> b.getNom()+" ("+b.getType()+")").toArray(String[]::new);
         JComboBox<String> bat = new JComboBox<>(names);
         int pre = comboBatConso != null ? comboBatConso.getSelectedIndex() : 0;
         if (pre >= 0 && pre < names.length) bat.setSelectedIndex(pre);
+
         JComboBox<TypeConsommation> type = new JComboBox<>(TypeConsommation.values());
-        JLabel unitLbl = new JLabel("kWh"); unitLbl.setForeground(PRIMARY); unitLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        type.addActionListener(e -> { TypeConsommation t = (TypeConsommation)type.getSelectedItem();
-            if (t!=null) unitLbl.setText(EnergyUnit.getUnitForType(t).getLabel()); });
+
+        // Unité affichée et mise à jour dynamiquement
+        JTextField unitField = new JTextField(EnergyUnit.getUnitForType(TypeConsommation.values()[0]).getLabel());
+        unitField.setEditable(false);
+        unitField.setBackground(new Color(240, 235, 255));
+        unitField.setForeground(PRIMARY);
+        unitField.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        type.addActionListener(e -> {
+            TypeConsommation t = (TypeConsommation) type.getSelectedItem();
+            if (t != null) unitField.setText(EnergyUnit.getUnitForType(t).getLabel());
+        });
+
         JTextField qty = new JTextField();
         String now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
         JTextField date = new JTextField(now);
-        row(f,"Bâtiment :", bat); row(f,"Type :", type); row(f,"Unité :", unitLbl);
-        row(f,"Quantité :", qty); row(f,"Date :", date);
+
+        row(f, "Batiment :",  bat);
+        row(f, "Type :",      type);
+        row(f, "Unite :",     unitField);
+        row(f, "Quantite :",  qty);
+        row(f, "Date :",      date);
+
         JButton ok = actionBtn("Ajouter", SUCCESS);
         ok.addActionListener(e -> {
             try {
-                int q = Integer.parseInt(qty.getText().trim());
-                if (q <= 0) { err(d,"Quantité doit être > 0."); return; }
+                String qStr = qty.getText().trim();
+                if (qStr.isEmpty()) { err(d, "Entrez une quantite."); return; }
+                int q = Integer.parseInt(qStr);
+                if (q <= 0) { err(d, "La quantite doit etre > 0."); return; }
                 TypeConsommation t = (TypeConsommation) type.getSelectedItem();
-                int batId = batiments.get(bat.getSelectedIndex()).getId();
+                int batIdx = bat.getSelectedIndex();
+                if (batIdx < 0) { err(d, "Selectionnez un batiment."); return; }
+                int batId = batiments.get(batIdx).getId();
                 Consommation_Energie c = new Consommation_Energie(batId, t, q, date.getText().trim());
                 int newId = db.saveConsommation(c);
-                if (newId == -1) { err(d, "Erreur lors de l'enregistrement en base de donnees."); return; }
+                if (newId == -1) {
+                    err(d, "Echec de l'enregistrement.\nVerifiez la console pour l'erreur SQL.");
+                    return;
+                }
                 c.setId(newId);
-                if (comboBatConso != null) comboBatConso.setSelectedIndex(bat.getSelectedIndex());
-                refreshConsoTable(); refreshDashboard(); d.dispose();
-                JOptionPane.showMessageDialog(this, "Consommation ajoutee !", "Succes", JOptionPane.INFORMATION_MESSAGE);
-            } catch (NumberFormatException ex) { err(d,"Quantité invalide."); }
+                if (comboBatConso != null) comboBatConso.setSelectedIndex(batIdx);
+                refreshConsoTable();
+                refreshDashboard();
+                d.dispose();
+            } catch (NumberFormatException ex) {
+                err(d, "Quantite invalide (nombre entier requis).");
+            }
         });
-        JButton cancel = actionBtn("Annuler", MUTED); cancel.addActionListener(e -> d.dispose());
+        JButton cancel = actionBtn("Annuler", MUTED);
+        cancel.addActionListener(e -> d.dispose());
         finishDialog(d, f, ok, cancel);
     }
 

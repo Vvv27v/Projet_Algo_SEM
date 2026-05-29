@@ -22,9 +22,16 @@ public class DatabaseManager {
 
     private void ensureConsommationSchema(Connection conn) throws SQLException {
         boolean hasCout = false;
-        try (ResultSet rs = conn.getMetaData().getColumns(null, null, "consommations", "cout")) {
-            hasCout = rs.next();
-        }
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("PRAGMA table_info(consommations)")) {
+            while (rs.next()) {
+                if ("cout".equalsIgnoreCase(rs.getString("name"))) {
+                    hasCout = true;
+                    break;
+                }
+            }
+        } catch (Exception ignored) {}
+
         if (!hasCout) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("DROP TABLE IF EXISTS consommations");
@@ -93,6 +100,7 @@ public class DatabaseManager {
                 if (keys.next()) return keys.getInt(1);
             }
         } catch (SQLException e) {
+            System.err.println("saveConsommation error: " + e.getMessage());
             e.printStackTrace();
         }
         return -1;
