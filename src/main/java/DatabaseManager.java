@@ -13,54 +13,119 @@ public class DatabaseManager {
         try (Connection conn = DriverManager.getConnection(DATABASE_URL)) {
             if (conn != null) {
                 createTables(conn);
-                syncConsommationNextId(conn);
+                migrateConsommations(conn);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private void syncConsommationNextId(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT MAX(id) FROM consommations")) {
-            if (rs.next() && rs.getObject(1) != null) {
-                Consommation_Energie.initNextId(rs.getInt(1) + 1);
-            }
-        }
-    }
-
     private void createTables(Connection conn) throws SQLException {
-        String sqlUsers = "CREATE TABLE IF NOT EXISTS users (" +
-                "id INTEGER PRIMARY KEY," +
-                "email TEXT NOT NULL UNIQUE," +
-                "nom TEXT NOT NULL," +
-                "prenom TEXT NOT NULL," +
-                "telephone TEXT NOT NULL," +
-                "password TEXT NOT NULL," +
-                "verified INTEGER DEFAULT 0)";
+        String sqlUsers = "CREATE TABLE IF NOT EXISTS users ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "email TEXT NOT NULL UNIQUE,"
+                + "nom TEXT NOT NULL,"
+                + "prenom TEXT NOT NULL,"
+                + "telephone TEXT NOT NULL,"
+                + "password TEXT NOT NULL,"
+                + "verified INTEGER DEFAULT 0)";
 
-        String sqlBatiments = "CREATE TABLE IF NOT EXISTS batiments (" +
-                "id INTEGER PRIMARY KEY," +
-                "user_id INTEGER NOT NULL," +
-                "nom TEXT NOT NULL," +
-                "type TEXT NOT NULL," +
-                "nombre_etages INTEGER NOT NULL," +
-                "details TEXT," +
-                "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)";
+        String sqlBatiments = "CREATE TABLE IF NOT EXISTS batiments ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "user_id INTEGER NOT NULL,"
+                + "nom TEXT NOT NULL,"
+                + "type TEXT NOT NULL,"
+                + "nombre_etages INTEGER NOT NULL,"
+                + "details TEXT,"
+                + "FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)";
 
-        String sqlConsommation = "CREATE TABLE IF NOT EXISTS consommations (" +
-                "id INTEGER PRIMARY KEY," +
-                "batiment_id INTEGER NOT NULL," +
-                "type TEXT NOT NULL," +
-                "quantite INTEGER NOT NULL," +
-                "unit TEXT DEFAULT 'kWh'," +
-                "date_heure TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                "FOREIGN KEY(batiment_id) REFERENCES batiments(id) ON DELETE CASCADE)";
+        String sqlConsommation = "CREATE TABLE IF NOT EXISTS consommations ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "batiment_id INTEGER NOT NULL,"
+                + "type TEXT NOT NULL,"
+                + "quantite INTEGER NOT NULL,"
+                + "unit TEXT DEFAULT 'KILOWATT_HEURE',"
+                + "cout REAL DEFAULT 0,"
+                + "date_heure TEXT DEFAULT CURRENT_TIMESTAMP,"
+                + "FOREIGN KEY(batiment_id) REFERENCES batiments(id) ON DELETE CASCADE)";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sqlUsers);
             stmt.execute(sqlBatiments);
             stmt.execute(sqlConsommation);
+        }
+    }
+
+    // Add missing columns to existing database
+    private void migrateConsommations(Connection conn) {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE consommations ADD COLUMN cout REAL DEFAULT 0");
+        } catch (SQLException ignored) {}
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE consommations ADD COLUMN date_heure TEXT DEFAULT CURRENT_TIMESTAMP");
+        } catch (SQLException ignored) {}
+    }
+
+    // Returns the auto-generated ID
+    public int saveConsommation(Consommation_Energie c) {
+        String sql = "INSERT INTO consommations (batiment_id, type, quantite, unit, cout, date_heure) VALUES(?,?,?,?,?,?)";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setInt(1, c.getBatimentId());
+            pstmt.setString(2, c.getType().name());
+            pstmt.setInt(3, c.getQuantité());
+            pstmt.setString(4, c.getUnit().name());
+            pstmt.setDouble(5, c.getCout());
+            pstmt.setString(6, c.getDateHeure());
+            pstmt.executeUpdate();
+            try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public List<Consommation_Energie> getConsommationsByBatiment(int batimentId) {
+        List<Consommation_Energie> list = new ArrayList<>();
+        String sql = "SELECT id, batiment_id, type, quantite, unit, cout, date_heure FROM consommations WHERE batiment_id = ? ORDER BY id DESC";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, batimentId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    EnergyUnit unit;
+                    try { unit = EnergyUnit.valueOf(rs.getString("unit")); }
+                    catch (Exception e) { unit = EnergyUnit.KILOWATT_HEURE; }
+                    TypeConsommation type;
+                    try { type = TypeConsommation.valueOf(rs.getString("type")); }
+                    catch (Exception e) { continue; }
+                    list.add(new Consommation_Energie(
+                            rs.getInt("id"),
+                            rs.getInt("batiment_id"),
+                            type,
+                            rs.getInt("quantite"),
+                            unit,
+                            rs.getDouble("cout"),
+                            rs.getString("date_heure")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public void deleteConsommation(int id) {
+        String sql = "DELETE FROM consommations WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -80,67 +145,42 @@ public class DatabaseManager {
         }
     }
 
-    public void saveConsommation(Consommation_Energie consommation) {
-        String sql = "INSERT OR REPLACE INTO consommations (id, batiment_id, type, quantite, unit) VALUES(?,?,?,?,?)";
+    public void deleteBatiment(int batimentId) {
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, consommation.getId());
-            pstmt.setInt(2, consommation.getBatimentId());
-            pstmt.setString(3, consommation.getType().name());
-            pstmt.setInt(4, consommation.getQuantité());
-            pstmt.setString(5, consommation.getUnit().name());
+             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM batiments WHERE id = ?")) {
+            pstmt.setInt(1, batimentId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
+             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM consommations WHERE batiment_id = ?")) {
+            pstmt.setInt(1, batimentId);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public List<Consommation_Energie> getConsommationsByBatiment(int batimentId) {
-        List<Consommation_Energie> consommations = new ArrayList<>();
-        String sql = "SELECT id, batiment_id, type, quantite, unit FROM consommations WHERE batiment_id = ?";
-
+    public List<Batiment> getBatimentsByUser(int userId) {
+        List<Batiment> list = new ArrayList<>();
+        String sql = "SELECT * FROM batiments WHERE user_id = ?";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, batimentId);
+            pstmt.setInt(1, userId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    EnergyUnit unit = EnergyUnit.valueOf(rs.getString("unit"));
-                    Consommation_Energie c = new Consommation_Energie(
-                            rs.getInt("id"),
-                            rs.getInt("batiment_id"),
-                            TypeConsommation.valueOf(rs.getString("type")),
-                            rs.getInt("quantite"),
-                            unit
-                    );
-                    consommations.add(c);
+                    Batiment b = createBatimentFromDatabase(
+                            rs.getInt("id"), rs.getString("nom"),
+                            rs.getString("type"), rs.getInt("nombre_etages"),
+                            rs.getString("details"));
+                    if (b != null) list.add(b);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return consommations;
-    }
-
-    public void deleteConsommation(int consommationId) {
-        String sql = "DELETE FROM consommations WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, consommationId);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void deleteBatiment(int batimentId) {
-        String sql = "DELETE FROM batiments WHERE id = ?";
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, batimentId);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        return list;
     }
 
     public void clearDatabase() {
@@ -148,62 +188,11 @@ public class DatabaseManager {
              Statement stmt = conn.createStatement()) {
             stmt.execute("DELETE FROM consommations");
             stmt.execute("DELETE FROM batiments");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='batiments'");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='consommations'");
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    public List<Batiment> getAllBatiments() {
-        List<Batiment> batiments = new ArrayList<>();
-        String sql = "SELECT * FROM batiments";
-
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String nom = rs.getString("nom");
-                String type = rs.getString("type");
-                int etages = rs.getInt("nombre_etages");
-                String details = rs.getString("details");
-
-                Batiment b = createBatimentFromDatabase(id, nom, type, etages, details);
-                if (b != null) {
-                    batiments.add(b);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return batiments;
-    }
-
-    public List<Batiment> getBatimentsByUser(int userId) {
-        List<Batiment> batiments = new ArrayList<>();
-        String sql = "SELECT * FROM batiments WHERE user_id = ?";
-
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, userId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-                    String nom = rs.getString("nom");
-                    String type = rs.getString("type");
-                    int etages = rs.getInt("nombre_etages");
-                    String details = rs.getString("details");
-
-                    Batiment b = createBatimentFromDatabase(id, nom, type, etages, details);
-                    if (b != null) {
-                        batiments.add(b);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return batiments;
     }
 
     public boolean registerUser(String email, String nom, String prenom, String telephone, String password) {
@@ -230,11 +219,7 @@ public class DatabaseManager {
             pstmt.setString(1, email);
             pstmt.setString(2, password);
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    if (rs.getInt("verified") == 1) {
-                        return rs.getInt("id");
-                    }
-                }
+                if (rs.next() && rs.getInt("verified") == 1) return rs.getInt("id");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -242,27 +227,12 @@ public class DatabaseManager {
         return -1;
     }
 
-    public boolean verifyUser(String email) {
-        String sql = "UPDATE users SET verified = 1 WHERE email = ?";
-        try (Connection conn = DriverManager.getConnection(DATABASE_URL);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, email);
-            pstmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
     public boolean emailExists(String email) {
         String sql = "SELECT id FROM users WHERE email = ?";
         try (Connection conn = DriverManager.getConnection(DATABASE_URL);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next();
-            }
+            try (ResultSet rs = pstmt.executeQuery()) { return rs.next(); }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -271,28 +241,21 @@ public class DatabaseManager {
 
     private Batiment createBatimentFromDatabase(int id, String nom, String type, int etages, String details) {
         return switch (type) {
-            case "Maison" -> {
-                int detail = details != null ? Integer.parseInt(details) : 0;
-                yield new Maison(id, nom, etages, detail);
-            }
-            case "Appartement" -> {
-                int detail = details != null ? Integer.parseInt(details) : 0;
-                yield new Appartement(id, nom, etages, detail);
-            }
-            case "Bureau" -> {
-                int detail = details != null ? Integer.parseInt(details) : 0;
-                yield new Bureau(id, nom, etages, detail);
-            }
+            case "Maison" -> new Maison(id, nom, etages, details != null ? parseIntSafe(details) : 0);
+            case "Appartement" -> new Appartement(id, nom, etages, details != null ? parseIntSafe(details) : 0);
+            case "Bureau" -> new Bureau(id, nom, etages, details != null ? parseIntSafe(details) : 0);
             case "Local_commercial" -> {
-                double detail = details != null ? Double.parseDouble(details) : 0;
-                yield new Local_commercial(id, nom, etages, detail);
+                double surf = 0;
+                if (details != null) try { surf = Double.parseDouble(details.replace(" m²", "")); } catch (Exception ignored) {}
+                yield new Local_commercial(id, nom, etages, surf);
             }
-            case "Batiment_Universitaire" -> {
-                int detail = details != null ? Integer.parseInt(details) : 0;
-                yield new Batiment_Universitaire(id, nom, etages, detail);
-            }
-            case "Autre_Structure" -> new Autre_Structure(id, nom, etages, details);
+            case "Batiment_Universitaire" -> new Batiment_Universitaire(id, nom, etages, details != null ? parseIntSafe(details) : 0);
+            case "Autre_Structure" -> new Autre_Structure(id, nom, etages, details != null ? details : "");
             default -> null;
         };
+    }
+
+    private int parseIntSafe(String s) {
+        try { return Integer.parseInt(s.replaceAll("[^0-9]", "")); } catch (Exception e) { return 0; }
     }
 }
